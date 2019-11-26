@@ -21,12 +21,15 @@ class StudentController {
         email: req.body.email,
       },
     });
+
     if (studentExists) {
       return res.status(400).json({ error: 'Student already exists' });
     }
 
-    const { name, email, idade, peso, altura } = Student.create(req.body);
-    return res.json({ name, email, idade, peso, altura });
+    const { id, name, email, idade, peso, altura } = await Student.create(
+      req.body
+    );
+    return res.json({ id, name, email, idade, peso, altura });
   }
 
   async showAll(req, res) {
