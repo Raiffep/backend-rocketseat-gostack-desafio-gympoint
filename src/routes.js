@@ -27,5 +27,8 @@ routes.get('/students', StudentController.showAll);
 routes.post('/files', upload.single('file'), FileController.store);
 
 routes.post('/plans', PlanController.store);
+routes.get('/plans', PlanController.showAll);
+routes.put('/plans/:id', PlanController.update);
+routes.delete('/plans/:id', PlanController.delete);
 
 export default routes;
