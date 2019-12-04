@@ -1,0 +1,13 @@
+import User from '../models/User';
+
+export default async (req, res, next) => {
+  const isAdmin = User.findOne({
+    where: { id: req.userId, admin: true },
+  });
+
+  if (!isAdmin) {
+    return res.status(401).json({ error: 'You does not admin!' });
+  }
+
+  return next();
+};
