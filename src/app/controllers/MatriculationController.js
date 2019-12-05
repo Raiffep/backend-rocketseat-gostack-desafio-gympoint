@@ -28,31 +28,21 @@ class MatriculationController {
       return res.status(400).json({ error: 'Plan does not exists' });
     }
 
-    const [date, hourTimeZone] = start_date.split('T');
-    const [year, mouth, day] = date.split('-');
-    const [hour, timeZone] = hourTimeZone.split('-');
-    const [hora, minuto, segundo] = hour.split(':');
-
-    const endMouth = (parseFloat(mouth) + plan.duration - 1).toString();
+    const newDate = new Date(start_date);
+    let newMonth = newDate.getMonth();
+    newMonth += plan.duration;
+    const endDate = newDate.setMonth(newMonth);
     const price = plan.duration * plan.price;
 
-    const end_date = new Date(year, endMouth, day, hora);
+    const end_date = new Date(endDate);
 
-    await Matriculation.create({
+    const matriculation = await Matriculation.create({
       student_id,
       plan_id,
       start_date,
       end_date,
       price,
     });
-
-    const matriculation = {
-      Name: student.name,
-      Plan: plan.title,
-      'Start Date': start_date,
-      'End Date': end_date,
-      Price: `R$ ${price},00`,
-    };
 
     return res.json(matriculation);
   }
