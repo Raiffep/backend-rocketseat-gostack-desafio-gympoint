@@ -27,7 +27,7 @@ class UserController {
     return res.json({ id, name, email, admin });
   }
 
-  async showAll(req, res) {
+  async index(req, res) {
     const users = await User.findAll();
     return res.json(users);
   }

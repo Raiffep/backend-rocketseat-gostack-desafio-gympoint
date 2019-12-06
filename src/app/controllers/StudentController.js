@@ -1,5 +1,8 @@
 import * as Yup from 'yup';
 import Student from '../models/Student';
+import Checkin from '../models/Checkin';
+
+let count = 0;
 
 class StudentController {
   async store(req, res) {
@@ -32,9 +35,40 @@ class StudentController {
     return res.json({ id, name, email, idade, peso, altura });
   }
 
-  async showAll(req, res) {
+  async index(req, res) {
     const students = await Student.findAll();
     return res.json(students);
+  }
+
+  async checkin(req, res) {
+    const student = await Student.findByPk(req.params.id);
+    const student_id = student.id;
+
+    if (count === 5) {
+      return res
+        .status(401)
+        .json({ error: 'Max number of checkins in this week!' });
+    }
+
+    const checkin = await Checkin.create({ student_id });
+
+    if (!student) {
+      return res.status(401).json({ error: 'Student not found' });
+    }
+
+    if (checkin) {
+      count += 1;
+    }
+
+    const { id, name, email } = student;
+
+    return res.json({
+      user: {
+        id,
+        name,
+        email,
+      },
+    });
   }
 }
 

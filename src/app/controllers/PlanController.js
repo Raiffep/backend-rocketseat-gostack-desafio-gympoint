@@ -17,7 +17,7 @@ class PlanController {
     return res.json({ id, title, duration, price });
   }
 
-  async showAll(req, res) {
+  async index(req, res) {
     const plans = await Plan.findAll();
     return res.json(plans);
   }
