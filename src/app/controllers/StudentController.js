@@ -42,6 +42,11 @@ class StudentController {
 
   async checkin(req, res) {
     const student = await Student.findByPk(req.params.id);
+
+    if (!student) {
+      return res.status(401).json({ error: 'Student not found' });
+    }
+
     const student_id = student.id;
 
     if (count === 5) {
@@ -51,10 +56,6 @@ class StudentController {
     }
 
     const checkin = await Checkin.create({ student_id });
-
-    if (!student) {
-      return res.status(401).json({ error: 'Student not found' });
-    }
 
     if (checkin) {
       count += 1;

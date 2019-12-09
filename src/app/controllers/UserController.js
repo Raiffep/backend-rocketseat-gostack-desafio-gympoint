@@ -69,7 +69,16 @@ class UserController {
   }
 
   async delete(req, res) {
-    const { email, password } = req.body;
+    const schema = Yup.object().shape({
+      email: Yup.string()
+        .email()
+        .required(),
+    });
+    if (!(await schema.isValid(req.body))) {
+      return res.status(400).json({ error: 'Validation fails' });
+    }
+
+    const { email } = req.body;
     const user = await User.findByPk(req.userId);
     if (email !== user.email) {
       const userExists = await User.findOne({ where: { email } });
@@ -77,10 +86,6 @@ class UserController {
       if (!userExists) {
         return res.status(400).json({ error: 'User does not exists' });
       }
-    }
-
-    if (password && !(await user.checkPassword(password))) {
-      return res.status(401).json({ error: 'Password does not match' });
     }
 
     await User.destroy({ where: { email } });
