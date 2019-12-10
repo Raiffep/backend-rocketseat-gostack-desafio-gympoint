@@ -1,6 +1,9 @@
 import * as Yup from 'yup';
+import { format } from 'date-fns';
+import pt from 'date-fns/locale/pt';
 import Student from '../models/Student';
 import HelpOrder from '../models/HelpOrder';
+import Mail from '../../lib/Mail';
 
 class HelpOrdersController {
   async store(req, res) {
@@ -35,7 +38,7 @@ class HelpOrdersController {
 
     const student_id = student.id;
 
-    const helpOrders = await HelpOrder.findAll({ where: student_id });
+    const helpOrders = await HelpOrder.findAll({ where: { student_id } });
 
     return res.json(helpOrders);
   }
@@ -57,7 +60,30 @@ class HelpOrdersController {
     const { answer } = req.body;
     const answer_at = new Date();
 
+    const student = await Student.findByPk(helpOrder.student_id);
+
     const answerUpdate = await helpOrder.update({ answer, answer_at });
+
+    await Mail.sendMail({
+      to: `${student.name} <${student.email}>`,
+      subject: 'Pedido respondido!',
+      template: 'helpOrder',
+      context: {
+        student: student.name,
+        questionDate: format(
+          helpOrder.createdAt,
+          "'dia' dd 'de' MMMM', às' H:mm'h'",
+          {
+            locale: pt,
+          }
+        ),
+        question: helpOrder.question,
+        answerDate: format(answer_at, "'dia' dd 'de' MMMM', às' H:mm'h'", {
+          locale: pt,
+        }),
+        answer,
+      },
+    });
 
     return res.json({ answerUpdate });
   }

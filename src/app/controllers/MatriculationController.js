@@ -1,7 +1,10 @@
 import * as Yup from 'yup';
+import { startOfHour, addMonths, parseISO, isBefore, format } from 'date-fns';
+import pt from 'date-fns/locale/pt';
 import Matriculation from '../models/Matriculation';
 import Student from '../models/Student';
 import Plan from '../models/Plan';
+import Mail from '../../lib/Mail';
 
 class MatriculationController {
   async store(req, res) {
@@ -28,20 +31,55 @@ class MatriculationController {
       return res.status(400).json({ error: 'Plan does not exists' });
     }
 
-    const newDate = new Date(start_date);
-    let newMonth = newDate.getMonth();
-    newMonth += plan.duration;
-    const endDate = newDate.setMonth(newMonth);
-    const price = plan.duration * plan.price;
+    const isMatriculated = await Matriculation.findOne({
+      where: { student_id },
+    });
 
-    const end_date = new Date(endDate);
+    if (isMatriculated) {
+      return res
+        .status(400)
+        .json({ error: 'This student is already matriculated in a plan' });
+    }
+
+    const startDate = startOfHour(parseISO(start_date));
+
+    if (isBefore(startDate, new Date())) {
+      return res.status(400).json({ error: 'Past dates are not permited' });
+    }
+
+    const end_date = addMonths(startDate, plan.duration);
+    const price = plan.duration * plan.price;
 
     const matriculation = await Matriculation.create({
       student_id,
       plan_id,
-      start_date,
+      start_date: startDate,
       end_date,
       price,
+    });
+
+    await Mail.sendMail({
+      to: `${student.name} <${student.email}>`,
+      subject: 'Matrícula efetuada!',
+      template: 'matriculation',
+      context: {
+        student: student.name,
+        plan: plan.title,
+        matriculationDate: format(
+          matriculation.createdAt,
+          "'dia' dd 'de' MMMM', às' H:mm'h'",
+          {
+            locale: pt,
+          }
+        ),
+        startDate: format(startDate, "'dia' dd 'de' MMMM', às' H:mm'h'", {
+          locale: pt,
+        }),
+        endDate: format(end_date, "'dia' dd 'de' MMMM', às' H:mm'h'", {
+          locale: pt,
+        }),
+        totalValue: `R$ ${price},00`,
+      },
     });
 
     return res.json(matriculation);
