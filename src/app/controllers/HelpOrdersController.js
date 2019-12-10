@@ -4,6 +4,7 @@ import pt from 'date-fns/locale/pt';
 import Student from '../models/Student';
 import HelpOrder from '../models/HelpOrder';
 import Mail from '../../lib/Mail';
+import User from '../models/User';
 
 class HelpOrdersController {
   async store(req, res) {
@@ -40,6 +41,10 @@ class HelpOrdersController {
 
     const helpOrders = await HelpOrder.findAll({ where: { student_id } });
 
+    if (!helpOrders.length) {
+      return res.status(401).json({ error: 'There are no help orders' });
+    }
+
     return res.json(helpOrders);
   }
 
@@ -60,6 +65,7 @@ class HelpOrdersController {
     const { answer } = req.body;
     const answer_at = new Date();
 
+    const instructor = await User.findByPk(req.userId);
     const student = await Student.findByPk(helpOrder.student_id);
 
     const answerUpdate = await helpOrder.update({ answer, answer_at });
@@ -70,6 +76,7 @@ class HelpOrdersController {
       template: 'helpOrder',
       context: {
         student: student.name,
+        instructor: instructor.name,
         questionDate: format(
           helpOrder.createdAt,
           "'dia' dd 'de' MMMM', às' H:mm'h'",
