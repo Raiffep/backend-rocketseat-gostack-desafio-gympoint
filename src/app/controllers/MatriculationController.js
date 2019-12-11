@@ -1,10 +1,10 @@
 import * as Yup from 'yup';
-import { startOfHour, addMonths, parseISO, isBefore, format } from 'date-fns';
-import pt from 'date-fns/locale/pt';
+import { startOfHour, addMonths, parseISO, isBefore } from 'date-fns';
 import Matriculation from '../models/Matriculation';
 import Student from '../models/Student';
 import Plan from '../models/Plan';
-import Mail from '../../lib/Mail';
+import MatriculationMail from '../jobs/MatricullationMail';
+import Queue from '../../lib/Queue';
 
 class MatriculationController {
   async store(req, res) {
@@ -58,28 +58,13 @@ class MatriculationController {
       price,
     });
 
-    await Mail.sendMail({
-      to: `${student.name} <${student.email}>`,
-      subject: 'Matrícula efetuada!',
-      template: 'matriculation',
-      context: {
-        student: student.name,
-        plan: plan.title,
-        matriculationDate: format(
-          matriculation.createdAt,
-          "'dia' dd 'de' MMMM', às' H:mm'h'",
-          {
-            locale: pt,
-          }
-        ),
-        startDate: format(startDate, "'dia' dd 'de' MMMM', às' H:mm'h'", {
-          locale: pt,
-        }),
-        endDate: format(end_date, "'dia' dd 'de' MMMM', às' H:mm'h'", {
-          locale: pt,
-        }),
-        totalValue: `R$ ${price},00`,
-      },
+    await Queue.add(MatriculationMail.key, {
+      student,
+      plan,
+      matriculation,
+      startDate,
+      end_date,
+      price,
     });
 
     return res.json(matriculation);

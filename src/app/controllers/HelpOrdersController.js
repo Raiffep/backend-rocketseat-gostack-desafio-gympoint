@@ -1,9 +1,8 @@
 import * as Yup from 'yup';
-import { format } from 'date-fns';
-import pt from 'date-fns/locale/pt';
 import Student from '../models/Student';
 import HelpOrder from '../models/HelpOrder';
-import Mail from '../../lib/Mail';
+import HelpOrderMail from '../jobs/HelpOrderMail';
+import Queue from '../../lib/Queue';
 import User from '../models/User';
 
 class HelpOrdersController {
@@ -70,26 +69,12 @@ class HelpOrdersController {
 
     const answerUpdate = await helpOrder.update({ answer, answer_at });
 
-    await Mail.sendMail({
-      to: `${student.name} <${student.email}>`,
-      subject: 'Pedido respondido!',
-      template: 'helpOrder',
-      context: {
-        student: student.name,
-        instructor: instructor.name,
-        questionDate: format(
-          helpOrder.createdAt,
-          "'dia' dd 'de' MMMM', às' H:mm'h'",
-          {
-            locale: pt,
-          }
-        ),
-        question: helpOrder.question,
-        answerDate: format(answer_at, "'dia' dd 'de' MMMM', às' H:mm'h'", {
-          locale: pt,
-        }),
-        answer,
-      },
+    await Queue.add(HelpOrderMail.key, {
+      student,
+      instructor,
+      helpOrder,
+      answer,
+      answer_at,
     });
 
     return res.json({ answerUpdate });
